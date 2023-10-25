@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <link />
+  <link rel="stylesheet" href="style.css" />
+  <title>Trash Sorting Game</title>
+
+  <body>
+    <div id="game-container">
+      <div class="trash-bin">
+        <div id="organic-bin" class="bin">
+          <img src="/assets/bin1.png" alt="Organic Bin"  />
+        </div>
+        <div id="non-organic-bin" class="bin">
+          <img src="/assets/bin2.png" alt="Non-Organic Bin" />
+        </div>
+        <div id="metal-bin" class="bin">
+          <img src="/assets/bin3.png" alt="metal-bin" />
+        </div>
+        <img src="/assets/ground.png" class="ground" />
+      </div>
+      <div id="trash-container"></div>
+    </div>
+    <div>
+      <p>Score: <span id="score">0</span></p>
+      <button id="startButton">Start</button>
+      <button id="pauseButton" disabled>Pause</button>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
