@@ -1,31 +1,183 @@
 <!DOCTYPE html>
 <html>
-  <link />
-  <link rel="stylesheet" href="style.css" />
-  <title>Trash Sorting Game</title>
+<link rel="stylesheet" href="style.css" />
+<title>Trash Sorting Game</title>
+<style>
+  #game-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start;
+  }
 
-  <body>
-    <div id="game-container">
-      <div class="trash-bin">
-        <div id="organic-bin" class="bin">
-          <img src="/assets/bin1.png" alt="Organic Bin"  />
-        </div>
-        <div id="non-organic-bin" class="bin">
-          <img src="/assets/bin2.png" alt="Non-Organic Bin" />
-        </div>
-        <div id="metal-bin" class="bin">
-          <img src="/assets/bin3.png" alt="metal-bin" />
-        </div>
-        <img src="/assets/ground.png" class="ground" />
+  .header {
+    margin-top: 15px;
+    /* margin-bottom: 66px; */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100vw;
+  }
+
+  .status {
+    background-color: #02A4B1;
+    border-radius: 0 10px 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 7px;
+    color: white;
+  }
+
+  #gameplay-info {
+    width: 100vw;
+    /* margin: auto 54px; */
+  }
+
+  progress {
+    /* margin: 0 24px; */
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .trash-queue-section {
+    /* grid-row: span;
+    grid-column: 4 / span 1; */
+
+    /* display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px; */
+
+    display: grid;
+    /* grid-template-columns: repeat(4, 1fr); */
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-column-gap: 50px;
+    /* grid-template-rows: 1fr;
+    grid-row-gap: 0px; */
+
+    margin: auto 24px;
+  }
+
+  .trash-queue-container {
+    border-radius: 25px;
+    background: #1A3066;
+    padding: 8px 16px;
+    height: 78px;
+  }
+
+  #trash-current {
+    /* width: 78px; */
+    width: 100%;
+    grid-area: 1 / 1 / 2 / 2;
+    grid-column: span 2 / span 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #trash-queue {
+    /* display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 20px;
+    column-span: 4;
+    grid-area: 1 / 2 / 2 / 5; */
+    /* grid-column: 1 / span 4; */
+
+    /* display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr;
+    grid-column-gap: 20px;
+    grid-row-gap: 0px; */
+
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-column: span 4 / span 4;
+  }
+
+  .trash-queue-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+  }
+
+  .gameplay-sky {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    margin: 0 24px 12px 24px;
+  }
+
+  .progress-section {
+    margin: auto 24px;
+  }
+</style>
+
+<body>
+  <div id="game-info">
+    <div class="header">
+      <div class="status">
+        <span id="time">
+          <span style="margin-right: 18px;">Time</span>
+          <span id="time-detail">9:20</span>
+        </span>
       </div>
-      <div id="trash-container"></div>
+      <img src="/assets/gear-icon.png" alt="gear_icon" style="margin-right: 12px;">
     </div>
-    <div>
-      <p>Score: <span id="score">0</span></p>
-      <button id="startButton">Start</button>
-      <button id="pauseButton" disabled>Pause</button>
-    </div>
+    
+    <div id="gameplay-info">
+      <div class="gameplay-sky">
+        <img src="/assets/gameplay-bird.png" alt="gameplay-bird" style="margin-right: 12px;">
+        <img src="/assets/gameplay-sky.png" alt="gameplay-info" style="margin-right: 12px;">
+        <img src="/assets/volume-high.png" alt="volume-high" style="margin-right: 12px;">
+      </div>
+      
+      <div class="progress-section">
+        <span id="score"></span>
+        <progress max="100" value="75"></progress>
+      </div>
+      <!-- grid grid-cols-5 gap-[20px] -->
+      <div class="trash-queue-section">
+        <!-- cols-span-2 -->
+        <div id="trash-current" class="trash-queue-container">
 
-    <script src="game.js"></script>
-  </body>
+        </div>
+        <!-- col-span-3 -->
+        <!-- <div id="trash-queue" class="trash-queue-container"> 
+          <p class="trash-queue-item">halo</p>
+        </div> -->
+        <div id="trash-queue" class="trash-queue-container">
+          <!-- <img class="trash-queue-item non-organic" src="/assets/plastic_bottle.png" alt="Plastic Bottle"
+            style=" object-fit: contain; background: none;"> -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <div class="trash-bin">
+      <div id="organic-bin" class="bin">
+        <img src="/assets/bin1.png" alt="Organic Bin" />
+      </div>
+      <div id="non-organic-bin" class="bin">
+        <img src="/assets/bin2.png" alt="Non-Organic Bin" />
+      </div>
+      <div id="metal-bin" class="bin">
+        <img src="/assets/bin3.png" alt="metal-bin" />
+      </div>
+      <img src="/assets/ground.png" class="ground" />
+    </div>
+    <div id="trash-container"></div>
+  </div>
+  <div style="display: none;">
+    <p>Score: <span id="score">0</span></p>
+    <button id="startButton">Start</button>
+    <button id="pauseButton" disabled>Pause</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+
 </html>
