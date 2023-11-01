@@ -14,25 +14,58 @@ function createRandomTrash() {
 
   // Create the trash
   const trashElement = document.createElement("img");
+  trashElement.className = 'trash-queue-item';
   trashElement.src = "/assets/" + trash.name.toLowerCase().replace(" ", "_") + ".png";
-  trashElement.alt = trash.name;
-  trashElement.className = "trash " + trash.type;
-  trashElement.style.left = Math.random() * 250 + "px"; // Random initial position
-  trashElement.style.objectFit = "contain";
-  trashElement.style.background = "none";
+  trashElement.alt = trash.type;
 
   return trashElement;
 }
+
+let trashQueues = [];
+let currentTrashQueue = null;
 
 let trashElements = [];
 let currentTrash = null;
 let score = 0;
 
-function createTrashElement() {
+function addTrashToQueue(newTrash) {
+  trashQueues.push(newTrash);
+  const trashQueue = document.getElementById("trash-queue");
+  trashQueue.appendChild(newTrash);
+}
+
+function addTrashToCurrentQueue(newTrash) {
+  currentTrashQueue = newTrash;
+  const trashCurrent = document.getElementById("trash-current");
+  trashCurrent.replaceChildren(newTrash);
+}
+
+function fillTrashQueue() {
+  for (let i = 0; i < 3; i++) {
+    const newTrash = createRandomTrash();
+    addTrashToQueue(newTrash);
+  }
+}
+
+function updateTrashQueue() {
+  const firstTrashQueue = trashQueues.shift();
+  addTrashToCurrentQueue(firstTrashQueue);
+
   const newTrash = createRandomTrash();
-  trashElements.push(newTrash);
-  document.getElementById("trash-container").appendChild(newTrash);
-  currentTrash = newTrash;
+  addTrashToQueue(newTrash);
+}
+
+function createTrashElement() {
+  // get current trash queue
+  currentTrashQueue.style.left = Math.random() * 250 + "px"; // Random initial position
+  currentTrashQueue.className = "trash " + currentTrashQueue.alt;
+  currentTrashQueue.style.objectFit = "contain";
+  currentTrashQueue.style.background = "none";
+
+  trashElements.push(currentTrashQueue);
+  document.getElementById("trash-container").appendChild(currentTrashQueue);
+  currentTrash = currentTrashQueue;
+  updateTrashQueue();
 }
 
 function removeTrashElement(trashElement) {
@@ -62,19 +95,19 @@ function moveTrash() {
         if (
           trash.classList.contains("organic") &&
           trash.offsetLeft >=
-            document.getElementById("organic-bin").offsetLeft &&
+          document.getElementById("organic-bin").offsetLeft &&
           trash.offsetLeft <=
-            document.getElementById("organic-bin").offsetLeft +
-            document.getElementById("organic-bin").clientWidth
+          document.getElementById("organic-bin").offsetLeft +
+          document.getElementById("organic-bin").clientWidth
         ) {
           score += 1;
         } else if (
           trash.classList.contains("non-organic") &&
           trash.offsetLeft >=
-            document.getElementById("non-organic-bin").offsetLeft &&
+          document.getElementById("non-organic-bin").offsetLeft &&
           trash.offsetLeft <=
-            document.getElementById("non-organic-bin").offsetLeft +
-            document.getElementById("non-organic-bin").clientWidth
+          document.getElementById("non-organic-bin").offsetLeft +
+          document.getElementById("non-organic-bin").clientWidth
         ) {
           score += 1;
         } else {
@@ -88,6 +121,10 @@ function moveTrash() {
         if (currentTrash === trash) {
           currentTrash = null;
         }
+
+        if (score >= 5) {
+          finishGame();
+        }
       }
     });
   }, 10);
@@ -99,11 +136,58 @@ const gameContainerWidth = document.getElementById("game-container").clientWidth
 const scrollSensitivity = 5; // Adjust this value to control scroll sensitivity
 const maxOutOfBounds = 300; // The maximum out-of-bounds value
 
+let touchStartX = 0;
+let activeBin = null;
+let trashInterval;
+
 function updateBinPosition() {
   document.getElementById("organic-bin").style.left = binPosition + "px";
   document.getElementById("metal-bin").style.left = binPosition + binWidth + "px";
   document.getElementById("non-organic-bin").style.left = binPosition + binWidth * 2 + "px";
 }
+
+document.getElementById("organic-bin").addEventListener("touchstart", (event) => {
+  touchStartX = event.touches[0].clientX;
+  activeBin = document.getElementById("organic-bin");
+});
+
+document.getElementById("metal-bin").addEventListener("touchstart", (event) => {
+  touchStartX = event.touches[0].clientX;
+  activeBin = document.getElementById("metal-bin");
+});
+
+document.getElementById("non-organic-bin").addEventListener("touchstart", (event) => {
+  touchStartX = event.touches[0].clientX;
+  activeBin = document.getElementById("non-organic-bin");
+});
+
+// Handle touchmove event to move the bins as the user drags
+document.addEventListener("touchmove", (event) => {
+  if (activeBin) {
+    const touchX = event.touches[0].clientX;
+    const deltaX = touchX - touchStartX;
+
+    // Update the bin position based on touch movement
+    binPosition += deltaX;
+
+    // Check if bins go out of bounds on the left side
+    if (binPosition < -maxOutOfBounds) {
+      binPosition = gameContainerWidth - binWidth + maxOutOfBounds;
+    }
+    // Check if bins go out of bounds on the right side
+    else if (binPosition > gameContainerWidth - binWidth + maxOutOfBounds) {
+      binPosition = -maxOutOfBounds;
+    }
+
+    updateBinPosition();
+    touchStartX = touchX;
+  }
+});
+
+// Handle touchend event to stop dragging the bins
+document.addEventListener("touchend", () => {
+  activeBin = null;
+});
 
 document.addEventListener("wheel", (event) => {
   // Update the bin position based on scroll direction
@@ -122,6 +206,10 @@ document.addEventListener("wheel", (event) => {
 });
 
 function startGame() {
+  const newTrash = createRandomTrash();
+  addTrashToCurrentQueue(newTrash)
+  fillTrashQueue()
+
   trashElements = [];
   score = 0;
   document.getElementById("score").textContent = score;
@@ -163,14 +251,13 @@ function startGame() {
     }
   });
 
-  let trashInterval; // Declare trashInterval using 'let' instead of 'const'
   trashInterval = setInterval(() => {
     moveTrash();
   }, 3000); // Make the trash fall every 3 seconds
 
   // Pause button functionality
   let isPaused = false;
-  document.getElementById("pauseButton").addEventListener("click", () => {
+  function togglePauseGame() {
     if (isPaused) {
       trashInterval = setInterval(() => {
         moveTrash();
@@ -182,7 +269,50 @@ function startGame() {
       isPaused = true;
       document.getElementById("pauseButton").textContent = "Resume";
     }
+  }
+
+  document.getElementById("pauseButton").addEventListener("click", () => {
+    togglePauseGame()
   });
 }
 
+function finishGame() {
+  const currentURL = window.location.href;
+  console.log(currentURL);
+  const url = new URL(currentURL);
+
+  // Get the query parameters
+  const searchParams = url.searchParams;
+
+  // Extract the game_session_id and user_id
+  const game_session_id = searchParams.get("game_session_id");
+  const user_id = searchParams.get("user_id");
+
+  const data = {
+    game_session_id,
+    user_id,
+    score
+  }
+
+  fetch("http://127.0.0.1:8000/api/finish-game", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  }).then((response) => {
+    response.json().then((data) => {
+      console.log(data);
+      if (data.success) {
+        clearInterval(trashInterval);
+        isPaused = true;
+      } else {
+        console.error(data.error);
+      }
+    }).catch((error) => {
+      console.error(error);
+    })
+  })
+}
 document.getElementById("startButton").addEventListener("click", startGame);
+startGame();
