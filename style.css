@@ -34,12 +34,12 @@ body {
   position: absolute;
   bottom: 20px;
   width: 150px;
-  height: 170px;
+  height: 180px;
   text-align: center;
   line-height: 50px;
 }
 
-#metal-bin {
+#residue-bin {
   left: 150px;
 }
 
@@ -47,7 +47,7 @@ body {
   left: 20px;
 }
 
-#non-organic-bin {
+#inorganic-bin {
   right: 10px;
 }
 
