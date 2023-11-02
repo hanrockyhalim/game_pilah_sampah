@@ -1,10 +1,14 @@
-const trashItems = [
-  { name: "News Paper", type: "organic" },
-  { name: "Plastic Bottle", type: "non-organic" },
-  { name: "Pizza Box", type: "organic" },
-  { name: "Soda Can", type: "non-organic" },
-  // Add more trash items as needed
-];
+let trashItems = [];
+
+const api_url = 'http://127.0.0.1:8000/api'
+
+const currentURL = window.location.href;
+const url = new URL(currentURL);
+const searchParams = url.searchParams;
+
+const game_session_id = searchParams.get("game_session_id");
+const user_id = searchParams.get("user_id");
+const game_mode = searchParams.get("game_mode");
 
 // Creating trash
 function createRandomTrash() {
@@ -15,8 +19,8 @@ function createRandomTrash() {
   // Create the trash
   const trashElement = document.createElement("img");
   trashElement.className = 'trash-queue-item';
-  trashElement.src = "/assets/" + trash.name.toLowerCase().replace(" ", "_") + ".png";
-  trashElement.alt = trash.type;
+  trashElement.src = trash.photo_url;
+  trashElement.alt = trash.category;
 
   return trashElement;
 }
@@ -56,8 +60,11 @@ function updateTrashQueue() {
 }
 
 function createTrashElement() {
+  let trash_position = Math.random() * 250;
+  trash_position = trash_position <= 30 ? 30 : trash_position
+
   // get current trash queue
-  currentTrashQueue.style.left = Math.random() * 250 + "px"; // Random initial position
+  currentTrashQueue.style.left = trash_position + "px"; // Random initial position
   currentTrashQueue.className = "trash " + currentTrashQueue.alt;
   currentTrashQueue.style.objectFit = "contain";
   currentTrashQueue.style.background = "none";
@@ -102,12 +109,12 @@ function moveTrash() {
         ) {
           score += 1;
         } else if (
-          trash.classList.contains("non-organic") &&
+          trash.classList.contains("inorganic") &&
           trash.offsetLeft >=
-          document.getElementById("non-organic-bin").offsetLeft &&
+          document.getElementById("inorganic-bin").offsetLeft &&
           trash.offsetLeft <=
-          document.getElementById("non-organic-bin").offsetLeft +
-          document.getElementById("non-organic-bin").clientWidth
+          document.getElementById("inorganic-bin").offsetLeft +
+          document.getElementById("inorganic-bin").clientWidth
         ) {
           score += 1;
         } else {
@@ -142,8 +149,8 @@ let trashInterval;
 
 function updateBinPosition() {
   document.getElementById("organic-bin").style.left = binPosition + "px";
-  document.getElementById("metal-bin").style.left = binPosition + binWidth + "px";
-  document.getElementById("non-organic-bin").style.left = binPosition + binWidth * 2 + "px";
+  document.getElementById("residue-bin").style.left = binPosition + binWidth + "px";
+  document.getElementById("inorganic-bin").style.left = binPosition + binWidth * 2 + "px";
 }
 
 document.getElementById("organic-bin").addEventListener("touchstart", (event) => {
@@ -151,14 +158,18 @@ document.getElementById("organic-bin").addEventListener("touchstart", (event) =>
   activeBin = document.getElementById("organic-bin");
 });
 
-document.getElementById("metal-bin").addEventListener("touchstart", (event) => {
+document.getElementById("residue-bin").addEventListener("touchstart", (event) => {
   touchStartX = event.touches[0].clientX;
-  activeBin = document.getElementById("metal-bin");
+  activeBin = document.getElementById("residue-bin");
 });
 
-document.getElementById("non-organic-bin").addEventListener("touchstart", (event) => {
+document.getElementById("inorganic-bin").addEventListener("touchstart", (event) => {
   touchStartX = event.touches[0].clientX;
-  activeBin = document.getElementById("non-organic-bin");
+  activeBin = document.getElementById("inorganic-bin");
+});
+
+document.getElementById("game-container").addEventListener("touchmove", (event) => {
+  event.preventDefault();
 });
 
 // Handle touchmove event to move the bins as the user drags
@@ -217,9 +228,6 @@ function startGame() {
   const gameContainer = document.getElementById("game-container");
   const trashContainer = document.getElementById("trash-container");
 
-  document.getElementById("startButton").disabled = true;
-  document.getElementById("pauseButton").disabled = false;
-
   trashContainer.innerHTML = ""; // Clear trash container
 
   updateBinPosition(); // Initialize bin position
@@ -254,47 +262,16 @@ function startGame() {
   trashInterval = setInterval(() => {
     moveTrash();
   }, 3000); // Make the trash fall every 3 seconds
-
-  // Pause button functionality
-  let isPaused = false;
-  function togglePauseGame() {
-    if (isPaused) {
-      trashInterval = setInterval(() => {
-        moveTrash();
-      }, 3000);
-      isPaused = false;
-      document.getElementById("pauseButton").textContent = "Pause";
-    } else {
-      clearInterval(trashInterval);
-      isPaused = true;
-      document.getElementById("pauseButton").textContent = "Resume";
-    }
-  }
-
-  document.getElementById("pauseButton").addEventListener("click", () => {
-    togglePauseGame()
-  });
 }
 
 function finishGame() {
-  const currentURL = window.location.href;
-  console.log(currentURL);
-  const url = new URL(currentURL);
-
-  // Get the query parameters
-  const searchParams = url.searchParams;
-
-  // Extract the game_session_id and user_id
-  const game_session_id = searchParams.get("game_session_id");
-  const user_id = searchParams.get("user_id");
-
   const data = {
     game_session_id,
     user_id,
     score
   }
 
-  fetch("http://127.0.0.1:8000/api/finish-game", {
+  fetch(`${api_url}/finish-game`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -302,10 +279,8 @@ function finishGame() {
     body: JSON.stringify(data)
   }).then((response) => {
     response.json().then((data) => {
-      console.log(data);
       if (data.success) {
         clearInterval(trashInterval);
-        isPaused = true;
       } else {
         console.error(data.error);
       }
@@ -314,5 +289,25 @@ function finishGame() {
     })
   })
 }
-document.getElementById("startButton").addEventListener("click", startGame);
-startGame();
+
+function initTrashesAssets() {
+  fetch(`${api_url}/trash?game_mode=${game_mode}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  }).then(response => {
+    response.json().then((data) => {
+      if (data.success) {
+        trashItems = data.data
+        startGame();
+      } else {
+        console.error(data);
+      }
+    }).catch((error) => {
+      console.error(error);
+    })
+  })
+}
+
+initTrashesAssets();
