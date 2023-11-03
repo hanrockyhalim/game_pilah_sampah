@@ -7,8 +7,16 @@ const url = new URL(currentURL);
 const searchParams = url.searchParams;
 
 const game_session_id = searchParams.get("game_session_id");
-const user_id = searchParams.get("user_id");
-const game_mode = searchParams.get("game_mode");
+
+let progressBar = document.getElementById("progress");
+
+let game_detail = {};
+let game_mode = "";
+let time = 0;
+let goal_score = 0;
+
+const timerDisplay = document.getElementById('time-detail');
+let timeInSeconds = 0;
 
 // Creating trash
 function createRandomTrash() {
@@ -121,16 +129,15 @@ function moveTrash() {
           score -= 1;
         }
 
+        // Update score & progress bar
+        score = score < 0 ? 0 : score;
+        progressBar.value = (score / goal_score) * 100;
         document.getElementById("score").textContent = score;
         trash.remove();
 
         // Update currentTrash only if it matches the removed trash
         if (currentTrash === trash) {
           currentTrash = null;
-        }
-
-        if (score >= 5) {
-          finishGame();
         }
       }
     });
@@ -217,6 +224,8 @@ document.addEventListener("wheel", (event) => {
 });
 
 function startGame() {
+  startCountdown();
+
   const newTrash = createRandomTrash();
   addTrashToCurrentQueue(newTrash)
   fillTrashQueue()
@@ -290,6 +299,30 @@ function finishGame() {
   })
 }
 
+function getGameSessionDetail() {
+  fetch(`${api_url}/user-game-sessions/${game_session_id}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  }).then(response => {
+    response.json().then((data) => {
+      if (data.success) {
+        game_detail = data.data.game_session
+        user_id = data.data.user_id
+        game_mode = game_detail.mode
+        goal_score = game_detail.goal_score
+
+        time = game_detail.time // in minutes
+        timeInSeconds = time * 60
+        initTrashesAssets();
+      } else {
+        console.error(data);
+      }
+    })
+  })
+}
+
 function initTrashesAssets() {
   fetch(`${api_url}/trash?game_mode=${game_mode}`, {
     method: "GET",
@@ -310,4 +343,28 @@ function initTrashesAssets() {
   })
 }
 
-initTrashesAssets();
+function updateTimer() {
+  const minutes = Math.floor(timeInSeconds / 60);
+  const seconds = timeInSeconds % 60;
+
+  const minutesStr = String(minutes).padStart(2, '0');
+  const secondsStr = String(seconds).padStart(2, '0');
+
+  timerDisplay.textContent = `${minutesStr}:${secondsStr}`;
+}
+
+function startCountdown() {
+  const timer = setInterval(function () {
+    timeInSeconds--;
+
+    if (timeInSeconds < 0) {
+      clearInterval(timer);
+      timerDisplay.textContent = "00:00"; // Timer reached 0
+      finishGame();
+    } else {
+      updateTimer();
+    }
+  }, 1000); // Update every 1 second
+}
+
+getGameSessionDetail();
