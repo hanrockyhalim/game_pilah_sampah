@@ -14,6 +14,7 @@ let game_detail = {};
 let game_mode = "";
 let time = 0;
 let goal_score = 0;
+let user = {}
 
 const timerDisplay = document.getElementById('time-detail');
 let timeInSeconds = 0;
@@ -115,7 +116,7 @@ function moveTrash() {
           document.getElementById("organic-bin").offsetLeft +
           document.getElementById("organic-bin").clientWidth
         ) {
-          score += 1;
+          score += 5;
         } else if (
           trash.classList.contains("inorganic") &&
           trash.offsetLeft >=
@@ -124,16 +125,22 @@ function moveTrash() {
           document.getElementById("inorganic-bin").offsetLeft +
           document.getElementById("inorganic-bin").clientWidth
         ) {
-          score += 1;
+          score += 5;
         } else {
-          score -= 1;
+          score -= 5;
         }
 
         // Update score & progress bar
-        score = score < 0 ? 0 : score;
+        score = score < 0 ? 0 : score
         progressBar.value = (score / goal_score) * 100;
         document.getElementById("score").textContent = score;
         trash.remove();
+
+        if (user.role == 'user') {
+          if (score >= goal_score) {
+            finishGame()
+          }
+        }
 
         // Update currentTrash only if it matches the removed trash
         if (currentTrash === trash) {
@@ -158,6 +165,8 @@ function updateBinPosition() {
   document.getElementById("organic-bin").style.left = binPosition + "px";
   document.getElementById("residue-bin").style.left = binPosition + binWidth + "px";
   document.getElementById("inorganic-bin").style.left = binPosition + binWidth * 2 + "px";
+  // document.getElementById("glass-bin").style.left = binPosition + binWidth * 3 + "px";
+  // document.getElementById("paper-bin").style.left = binPosition + binWidth * 4 + "px";
 }
 
 document.getElementById("organic-bin").addEventListener("touchstart", (event) => {
@@ -312,6 +321,7 @@ function getGameSessionDetail() {
         user_id = data.data.user_id
         game_mode = game_detail.mode
         goal_score = game_detail.goal_score
+        user = data.data.user
 
         time = game_detail.time // in minutes
         timeInSeconds = time * 60
@@ -319,6 +329,8 @@ function getGameSessionDetail() {
       } else {
         console.error(data);
       }
+    }).finally(() => {
+      handleStatusContainer()
     })
   })
 }
@@ -341,6 +353,17 @@ function initTrashesAssets() {
       console.error(error);
     })
   })
+}
+
+function handleStatusContainer() {
+  if (user.role == 'user') {
+    document.getElementById("time-container").style.display = "none";
+  } else if (user.role == 'guest')
+  document.getElementById("level-container").style.display = "none";
+  document.getElementById('level-detail').textContent = game_detail.level
+  document.getElementById('goals-detail').textContent = game_detail.goal_score
+  // document.getElementById("level").style.display = "none";
+  // document.getElementById("goals").style.display = "none";
 }
 
 function updateTimer() {

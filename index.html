@@ -113,18 +113,35 @@
   .progress-section {
     margin: auto 24px;
   }
+
+  #level-container {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-items: center;
+  }
 </style>
 
 <body>
   <div id="game-info">
     <div class="header">
       <div class="status">
-        <span id="time">
+        <span id="time-container">
           <span style="margin-right: 18px;">Time</span>
           <span id="time-detail"></span>
         </span>
+        <div id="level-container">
+          <span id="level">
+            <span style="margin-right: 18px;">Level</span>
+            <span id="level-detail"></span>
+          </span>
+          <span id="goals">
+            <span style="margin-right: 18px;">Goals</span>
+            <span id="goals-detail"></span>
+          </span>
+        </div>
       </div>
-      <img src="/assets/gear-icon.png" alt="gear_icon">
+      <img src="/assets/gear-icon.png" alt="gear_icon" style="margin-right: 18px;">
     </div>
 
     <div id="gameplay-info">
@@ -162,6 +179,12 @@
       <div id="residue-bin" class="bin">
         <img src="/assets/residue-bin.png" alt="residue-bin" />
       </div>
+      <!-- <div id="glass-bin" class="bin">
+        <img src="/assets/glass-bin.png" alt="glass-bin" />
+      </div>
+      <div id="paper-bin" class="bin">
+        <img src="/assets/paper-bin.png" alt="paper-bin" />
+      </div> -->
       <img src="/assets/ground.png" class="ground" />
     </div>
     <div id="trash-container"></div>
