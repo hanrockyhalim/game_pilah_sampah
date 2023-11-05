@@ -5,7 +5,6 @@ const api_url = 'http://127.0.0.1:8000/api'
 const currentURL = window.location.href;
 const url = new URL(currentURL);
 const searchParams = url.searchParams;
-
 const game_session_id = searchParams.get("game_session_id");
 
 let progressBar = document.getElementById("progress");
@@ -18,6 +17,7 @@ let user = {}
 
 const timerDisplay = document.getElementById('time-detail');
 let timeInSeconds = 0;
+let current_time = 0;
 
 // Creating trash
 function createRandomTrash() {
@@ -36,7 +36,6 @@ function createRandomTrash() {
 
 let trashQueues = [];
 let currentTrashQueue = null;
-
 let trashElements = [];
 let currentTrash = null;
 let score = 0;
@@ -118,6 +117,15 @@ function moveTrash() {
         ) {
           score += 5;
         } else if (
+          trash.classList.contains("residue") &&
+          trash.offsetLeft >=
+          document.getElementById("inorganic-bin").offsetLeft &&
+          trash.offsetLeft <=
+          document.getElementById("inorganic-bin").offsetLeft +
+          document.getElementById("inorganic-bin").clientWidth
+        ) {
+          score += 5;
+        } else if (
           trash.classList.contains("inorganic") &&
           trash.offsetLeft >=
           document.getElementById("inorganic-bin").offsetLeft &&
@@ -126,13 +134,33 @@ function moveTrash() {
           document.getElementById("inorganic-bin").clientWidth
         ) {
           score += 5;
+        } else if (
+          trash.classList.contains("glass") &&
+          trash.offsetLeft >=
+          document.getElementById("glass-bin").offsetLeft &&
+          trash.offsetLeft <=
+          document.getElementById("glass-bin").offsetLeft +
+          document.getElementById("glass-bin").clientWidth
+        ) {
+          score += 5;
+        } else if (
+          trash.classList.contains("paper") &&
+          trash.offsetLeft >=
+          document.getElementById("paper-bin").offsetLeft &&
+          trash.offsetLeft <=
+          document.getElementById("paper-bin").offsetLeft +
+          document.getElementById("paper-bin").clientWidth
+        ) {
+          score += 5;
         } else {
           score -= 5;
         }
 
         // Update score & progress bar
         score = score < 0 ? 0 : score
-        progressBar.value = (score / goal_score) * 100;
+        if (user.role == 'user') {
+          progressBar.value = (score / goal_score) * 100
+        }
         document.getElementById("score").textContent = score;
         trash.remove();
 
@@ -155,38 +183,25 @@ let binPosition = 0; // Initial position of the bins
 const binWidth = document.getElementById("organic-bin").clientWidth;
 const gameContainerWidth = document.getElementById("game-container").clientWidth - 250;
 const scrollSensitivity = 5; // Adjust this value to control scroll sensitivity
-const maxOutOfBounds = 300; // The maximum out-of-bounds value
+const maxOutOfBounds = 700; // The maximum out-of-bounds value
 
 let touchStartX = 0;
 let activeBin = null;
 let trashInterval;
 
+document.getElementById("game-container").addEventListener("touchmove", (event) => {
+  event.preventDefault();
+});
+
 function updateBinPosition() {
   document.getElementById("organic-bin").style.left = binPosition + "px";
   document.getElementById("residue-bin").style.left = binPosition + binWidth + "px";
   document.getElementById("inorganic-bin").style.left = binPosition + binWidth * 2 + "px";
-  // document.getElementById("glass-bin").style.left = binPosition + binWidth * 3 + "px";
-  // document.getElementById("paper-bin").style.left = binPosition + binWidth * 4 + "px";
+  if (game_mode == 'hard') {
+    document.getElementById("glass-bin").style.left = binPosition + binWidth * 3 + "px";
+    document.getElementById("paper-bin").style.left = binPosition + binWidth * 4 + "px";
+  }
 }
-
-document.getElementById("organic-bin").addEventListener("touchstart", (event) => {
-  touchStartX = event.touches[0].clientX;
-  activeBin = document.getElementById("organic-bin");
-});
-
-document.getElementById("residue-bin").addEventListener("touchstart", (event) => {
-  touchStartX = event.touches[0].clientX;
-  activeBin = document.getElementById("residue-bin");
-});
-
-document.getElementById("inorganic-bin").addEventListener("touchstart", (event) => {
-  touchStartX = event.touches[0].clientX;
-  activeBin = document.getElementById("inorganic-bin");
-});
-
-document.getElementById("game-container").addEventListener("touchmove", (event) => {
-  event.preventDefault();
-});
 
 // Handle touchmove event to move the bins as the user drags
 document.addEventListener("touchmove", (event) => {
@@ -233,7 +248,9 @@ document.addEventListener("wheel", (event) => {
 });
 
 function startGame() {
-  startCountdown();
+  if (user.role == 'guest') {
+    startCountdown();
+  }
 
   const newTrash = createRandomTrash();
   addTrashToCurrentQueue(newTrash)
@@ -318,19 +335,26 @@ function getGameSessionDetail() {
     response.json().then((data) => {
       if (data.success) {
         game_detail = data.data.game_session
+        user = data.data.user
         user_id = data.data.user_id
         game_mode = game_detail.mode
-        goal_score = game_detail.goal_score
-        user = data.data.user
 
-        time = game_detail.time // in minutes
-        timeInSeconds = time * 60
+        if (user.role == 'user') {
+          document.getElementById("time-container").style.display = "none";
+          document.getElementById('level-detail').textContent = game_detail.level
+          document.getElementById('goals-detail').textContent = game_detail.goal_score
+          goal_score = game_detail.goal_score
+
+        } else if (user.role == 'guest') {
+          document.getElementById("level-container").style.display = "none";
+          time = game_detail.time
+          timeInSeconds = time * 60
+        }
         initTrashesAssets();
+        initTrashBins();
       } else {
         console.error(data);
       }
-    }).finally(() => {
-      handleStatusContainer()
     })
   })
 }
@@ -355,15 +379,38 @@ function initTrashesAssets() {
   })
 }
 
-function handleStatusContainer() {
-  if (user.role == 'user') {
-    document.getElementById("time-container").style.display = "none";
-  } else if (user.role == 'guest')
-  document.getElementById("level-container").style.display = "none";
-  document.getElementById('level-detail').textContent = game_detail.level
-  document.getElementById('goals-detail').textContent = game_detail.goal_score
-  // document.getElementById("level").style.display = "none";
-  // document.getElementById("goals").style.display = "none";
+function initTrashBins() {
+  document.getElementById("glass-bin").style.display = "none";
+  document.getElementById("paper-bin").style.display = "none";
+
+  document.getElementById("organic-bin").addEventListener("touchstart", (event) => {
+    touchStartX = event.touches[0].clientX;
+    activeBin = document.getElementById("organic-bin");
+  });
+
+  document.getElementById("residue-bin").addEventListener("touchstart", (event) => {
+    touchStartX = event.touches[0].clientX;
+    activeBin = document.getElementById("residue-bin");
+  });
+
+  document.getElementById("inorganic-bin").addEventListener("touchstart", (event) => {
+    touchStartX = event.touches[0].clientX;
+    activeBin = document.getElementById("inorganic-bin");
+  });
+
+  if (game_mode == 'hard') {
+    document.getElementById("glass-bin").style.display = "block";
+    document.getElementById("paper-bin").style.display = "block";
+
+    document.getElementById("glass-bin").addEventListener("touchstart", (event) => {
+      touchStartX = event.touches[0].clientX;
+      activeBin = document.getElementById("glass-bin");
+    });
+    document.getElementById("paper-bin").addEventListener("touchstart", (event) => {
+      touchStartX = event.touches[0].clientX;
+      activeBin = document.getElementById("paper-bin");
+    });
+  }
 }
 
 function updateTimer() {
@@ -379,6 +426,7 @@ function updateTimer() {
 function startCountdown() {
   const timer = setInterval(function () {
     timeInSeconds--;
+    progressBar.value = (timeInSeconds / (time * 60)) * 100
 
     if (timeInSeconds < 0) {
       clearInterval(timer);
