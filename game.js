@@ -1,7 +1,7 @@
 let trashItems = [];
 
-const api_url = 'http://127.0.0.1:8000/api'
-
+const environtment = 'production';
+const api_url = environtment == 'development' ? 'http://127.0.0.1:8000/api' : 'https://api-golimbah.intaniofficial.com/api';
 const currentURL = window.location.href;
 const url = new URL(currentURL);
 const searchParams = url.searchParams;
