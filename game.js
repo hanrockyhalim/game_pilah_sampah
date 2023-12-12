@@ -1,7 +1,7 @@
 let trashItems = [];
 
 const environtment = 'production';
-const api_url = environtment == 'development' ? 'http://127.0.0.1:8000/api' : 'https://api-golimbah.intaniofficial.com/api';
+const api_url = environtment == 'production' ? 'http://127.0.0.1:8000/api' : 'https://golimbah-api.larvaacademy.id/api';
 const currentURL = window.location.href;
 const url = new URL(currentURL);
 const searchParams = url.searchParams;
@@ -316,6 +316,7 @@ function finishGame() {
     response.json().then((data) => {
       if (data.success) {
         clearInterval(trashInterval);
+        window.location.replace(`https://golimbah-web.larvaacademy.id/guest-leaderboard/${game_session_id}`);
       } else {
         console.error(data.error);
       }
