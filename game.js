@@ -1,23 +1,33 @@
 let trashItems = [];
 
-const environtment = 'production';
-const api_url = environtment == 'production' ? 'http://127.0.0.1:8000/api' : 'https://golimbah-api.larvaacademy.id/api';
 const currentURL = window.location.href;
 const url = new URL(currentURL);
 const searchParams = url.searchParams;
 const game_session_id = searchParams.get("game_session_id");
+const user_id = searchParams.get("user_id");
+const game_mode = searchParams.get("game_mode");
+
+const is_production = url.hostname != 'localhost';
+const api_url = is_production ? 'https://golimbah-api.larvaacademy.id/api' : 'http://127.0.0.1:8000/api';
+
+const trash_in_audio = new Audio('/assets/trash_in.m4a');
+const soundtrack_audio = new Audio('/assets/soundtrack.m4a');
 
 let progressBar = document.getElementById("progress");
+const finishGameButton = document.getElementById('finish-game')
+const timerDisplay = document.getElementById('time-detail');
 
 let game_detail = {};
-let game_mode = "";
 let time = 0;
 let goal_score = 0;
 let user = {}
-
-const timerDisplay = document.getElementById('time-detail');
 let timeInSeconds = 0;
 let current_time = 0;
+let trashQueues = [];
+let currentTrashQueue = null;
+let trashElements = [];
+let currentTrash = null;
+let score = 0;
 
 // Creating trash
 function createRandomTrash() {
@@ -30,15 +40,11 @@ function createRandomTrash() {
   trashElement.className = 'trash-queue-item';
   trashElement.src = trash.photo_url;
   trashElement.alt = trash.category;
+  console.log(trash.category);
+  console.log(trashElement.alt);
 
   return trashElement;
 }
-
-let trashQueues = [];
-let currentTrashQueue = null;
-let trashElements = [];
-let currentTrash = null;
-let score = 0;
 
 function addTrashToQueue(newTrash) {
   trashQueues.push(newTrash);
@@ -119,10 +125,10 @@ function moveTrash() {
         } else if (
           trash.classList.contains("residue") &&
           trash.offsetLeft >=
-          document.getElementById("inorganic-bin").offsetLeft &&
+          document.getElementById("residue-bin").offsetLeft &&
           trash.offsetLeft <=
-          document.getElementById("inorganic-bin").offsetLeft +
-          document.getElementById("inorganic-bin").clientWidth
+          document.getElementById("residue-bin").offsetLeft +
+          document.getElementById("residue-bin").clientWidth
         ) {
           score += 5;
         } else if (
@@ -155,6 +161,8 @@ function moveTrash() {
         } else {
           score -= 5;
         }
+
+        trash_in_audio.play();
 
         // Update score & progress bar
         score = score < 0 ? 0 : score
@@ -300,6 +308,8 @@ function startGame() {
 }
 
 function finishGame() {
+  clearInterval(trashInterval);
+
   const data = {
     game_session_id,
     user_id,
@@ -315,13 +325,29 @@ function finishGame() {
   }).then((response) => {
     response.json().then((data) => {
       if (data.success) {
-        clearInterval(trashInterval);
-        window.location.replace(`https://golimbah-web.larvaacademy.id/guest-leaderboard/${game_session_id}`);
+
+        // window.location.replace(`https://golimbah-web.larvaacademy.id/guest-leaderboard/${game_session_id}`);
+        if (is_production) {
+          if (user.role == 'guest') {
+            window.location.replace(`https://golimbah-web.larvaacademy.id/guest-leaderboard/${game_session_id}`);
+          } else {
+            window.location.replace(`https://golimbah-web.larvaacademy.id/leaderboard`);
+          }
+        } else {
+          if (user.role == 'guest') {
+            window.location.replace(`http://127.0.0.1:5173/guest-leaderboard/${game_session_id}`);
+          } else {
+            window.location.replace(`http://127.0.0.1:5173/leaderboard`);
+          }
+        }
+
       } else {
         console.error(data.error);
       }
     }).catch((error) => {
       console.error(error);
+    }).finally(() => {
+      soundtrack_audio.pause();
     })
   })
 }
@@ -337,17 +363,15 @@ function getGameSessionDetail() {
       if (data.success) {
         game_detail = data.data.game_session
         user = data.data.user
-        user_id = data.data.user_id
-        game_mode = game_detail.mode
 
         if (user.role == 'user') {
           document.getElementById("time-container").style.display = "none";
           document.getElementById('level-detail').textContent = game_detail.level
           document.getElementById('goals-detail').textContent = game_detail.goal_score
           goal_score = game_detail.goal_score
-
         } else if (user.role == 'guest') {
           document.getElementById("level-container").style.display = "none";
+          finishGameButton.style.display = 'none';
           time = game_detail.time
           timeInSeconds = time * 60
         }
@@ -439,4 +463,48 @@ function startCountdown() {
   }, 1000); // Update every 1 second
 }
 
+function exitGame() {
+  if (is_production) {
+    if (user.role == 'guest') {
+      window.location.replace(`https://golimbah-web.larvaacademy.id/`);
+    } else {
+      window.location.replace(`https://golimbah-web.larvaacademy.id/`);
+    }
+  } else {
+    if (user.role == 'guest') {
+      window.location.replace(`http://127.0.0.1:5173/`);
+    } else {
+      window.location.replace(`http://127.0.0.1:5173/`);
+    }
+  }
+}
+
 getGameSessionDetail();
+document.addEventListener('touchstart', function () {
+  soundtrack_audio.play();
+});
+
+finishGameButton.onclick = () => {
+  clearInterval(trashInterval);
+  window.parent.postMessage("exitGame", "*");
+}
+
+window.addEventListener("message", function (event) {
+  console.log(event);
+  if (event.data == 'finishGame') {
+    finishGame();
+  }
+}, false);
+
+// import Pusher from "pusher-js";
+var pusher = new Pusher("b3d4312adf3221170947", {
+  cluster: "ap1",
+});
+
+var channel = pusher.subscribe("my-channel");
+channel.bind("my-event", (data) => {
+  if (data.message == "game-session-finished-first") {
+    finishGame();
+  }
+});
+

@@ -137,12 +137,13 @@
             <span id="level-detail"></span>
           </span>
           <span id="goals">
-            <span style="margin-right: 18px;">Goals</span>
+            <span style="margin-right: 18px;">Goal</span>
             <span id="goals-detail"></span>
           </span>
         </div>
       </div>
-      <img src="/assets/gear-icon.png" alt="gear_icon" style="margin-right: 18px;">
+      <img id="finish-game" src="/assets/exit.png" alt="exit" style="margin-right: 18px;">
+      <!-- <img src="/assets/gear-icon.png" alt="gear_icon" style="margin-right: 18px;"> -->
     </div>
 
     <div id="gameplay-info">
@@ -191,7 +192,9 @@
     <div id="trash-container"></div>
   </div>
 
-  <script src="game.js"></script>
+  <script type="module" src="game.js"></script>
+  <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+
 </body>
 
 </html>
