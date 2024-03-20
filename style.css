@@ -34,7 +34,10 @@ body {
   position: absolute;
   bottom: 20px;
   width: 150px;
-  height: 180px;
+  /* height: 180px; */
+  /* width: auto; */
+  /* height: 90px; */
+  height: 30%;
   text-align: center;
   line-height: 50px;
 }
